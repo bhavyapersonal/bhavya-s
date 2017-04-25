@@ -1,0 +1,82 @@
+import mysql.connector
+import csv
+import json
+import datetime 
+from datetime import date
+
+
+cnxn = mysql.connector.connect(user='user', password='password',host='host',database='new')
+cursor = cnxn.cursor()
+query ="select app_id ,research_meta from research_meta"
+cursor.execute(query)
+results=cursor.fetchall()
+a =open("breach_calculation_QA.csv",'a')
+file_new=csv.writer(a)
+l= ['correct answer','app_id','No of days']
+file_new.writerow(l)
+
+for row in results:
+  app= row[0]
+  dates = row[1]
+  datalist=json.loads(dates)
+  a=datalist['breaches']
+  #print a
+  b= [d['date'] for d in a if 'date' in d]
+  #print app,b
+  c= [d['recent'] for d in a if 'recent' in d]
+  #print c
+  days1= []
+  for i in b:
+    
+    breach_date=datetime.datetime.strptime(i,'%m/%d/%Y').strftime("%m-%d-%Y")
+    today= datetime.datetime.today().strftime("%m-%d-%Y")
+    timedelta =datetime.datetime.strptime(today,"%m-%d-%Y") - datetime.datetime.strptime(breach_date,'%m-%d-%Y')
+    date=timedelta.days
+    days1.append(date)
+  #print days1
+  date_dict=dict(zip(days1, c))
+  #print app,date_dict
+  for i in date_dict:
+    
+    if i <= 365:
+        if date_dict.get(i)=='No':
+          print "wrong_Yes",app,i 
+          file_new.writerow(["wrong_Yes",app,i])          
+    else:
+        if date_dict.get(i)=='Yes':
+          print "wrong_No",app,i
+          file_new.writerow(["wrong_No",app,i])
+  #for j in c:
+  #if timedelta.days <= 365:
+    #if c[0]=='No':
+      #print "wrong_Yes",app,i
+  #else:
+    #if c[0]=='Yes':
+      #print "wrong_No",app,i
+E=["All apps have perfect Breach Details"]
+file_new.writerow(E)
+
+query1 ="SELECT id,appname,recent_breach  FROM `research_data` WHERE `recent_breach` LIKE '%yes%'  and id not in (SELECT app_id FROM `research_meta`)"
+cursor.execute(query1)
+results1=cursor.fetchall()
+g=["Apps missing breach data"]
+file_new.writerow(g)
+for i in results1:
+  appid = row[0]
+  appname =row[1]
+  #recent_breach =row[2]
+  file_new.writerow([i])
+cursor.close()
+cnxn.close () 
+del cnxn
+        
+        
+        
+        
+         
+    
+  
+  
+          
+  
+     
